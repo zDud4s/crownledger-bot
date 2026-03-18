@@ -18,6 +18,14 @@ def test_instantiation_sets_all_fields():
     assert p.battles_total == 30
     assert p.raw_7d == 7
     assert p.raw_14d == 14
+    assert p.days_with_battles == 5
+    assert p.days_since_oldest == 10.0
+    assert p.days_since_last_any == 1.0
+    assert p.days_since_last_effective == 2.0
+    assert p.weighted_7d == 7.0
+    assert p.weighted_14d == 14.0
+    assert p.activity_score == 0.75
+    assert p.recent_activity_score == 0.60
     assert p.battle_utility == 0.80
 
 def test_is_frozen():
