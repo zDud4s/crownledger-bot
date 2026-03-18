@@ -1,32 +1,16 @@
 import math
-from bisect import bisect_left, bisect_right
-
 
 def clamp(x, lo=0.0, hi=1.0):
     return max(lo, min(x, hi))
 
-
-def _pct_rank(x: float, sorted_vals: list[float]) -> float:
-    """
-    Percentil 0..1 com midrank.
-    """
-    n = len(sorted_vals)
-    if n == 0:
+def _span_factor(days_since_oldest: float, full_at_days: float = 2.0, zero_at_days: float = 15.0) -> float:
+    if not math.isfinite(days_since_oldest):
         return 0.0
-    if n == 1:
+    if days_since_oldest <= full_at_days:
         return 1.0
-
-    left = bisect_left(sorted_vals, x)
-    right = bisect_right(sorted_vals, x)
-
-    if right == 0:
+    if days_since_oldest >= zero_at_days:
         return 0.0
-    if left >= n:
-        return 1.0
-
-    mid = (left + right - 1) / 2.0
-    return clamp(mid / (n - 1))
-
+    return 1.0 - ((days_since_oldest - full_at_days) / (zero_at_days - full_at_days))
 
 def compute_clan_baseline(snapshots: list[dict]) -> dict:
     """
@@ -79,79 +63,30 @@ def compute_clan_baseline(snapshots: list[dict]) -> dict:
     }
 
 
-def compute_activity_score(snapshot: dict, clan_baseline: dict | None = None) -> float:
-    """
-    Score em 0..1.
-    - Se clan_baseline existir: score comparativo (percentis) e MULTIPLICATIVO.
-    - Se não existir: fallback simples.
-    """
-    days_eff = float(snapshot["days_since_last_effective"])
-    w7 = float(snapshot["weighted_7d"])
-    w2 = float(snapshot["weighted_2d"])
+def compute_activity_score(snapshot: dict) -> float:
+    N_ACTIVE = 30
+    X_EFF = 0.20  # x% de "efetividade" (bónus leve)
 
     total = float(snapshot.get("battles_total_fetched", 0.0))
-    days_with = float(snapshot.get("days_with_battles", 0.0))
+    days_since_oldest = float(snapshot.get("days_since_oldest", float("inf")))
+    eff_ratio = float(snapshot.get("effective_ratio_total", 0.0))
 
-    raw_7d = float(snapshot.get("raw_7d", 0.0))
-    eff_7d = float(snapshot.get("effective_7d", 0.0))
-
-    rec = (-days_eff) if math.isfinite(days_eff) else -1e9
-    sat = min(total, 40.0)
-    den = total / max(1.0, days_with)
-    ratio = (eff_7d / raw_7d) if raw_7d > 0 else 0.0
-
-    # Se não houve nenhuma batalha efetiva (e days_eff é inf), define score 0 direto
-    if not math.isfinite(days_eff) and eff_7d == 0:
+    if total <= 0:
         return 0.0
 
-    if clan_baseline is not None:
-        p_rec = _pct_rank(rec, clan_baseline["rec"])      # mais recente -> maior
-        p_w7 = _pct_rank(w7, clan_baseline["w7"])
-        p_w2 = _pct_rank(w2, clan_baseline["w2"])
-        p_sat = _pct_rank(sat, clan_baseline["sat"])
-        p_den = _pct_rank(den, clan_baseline["den"])
-        p_ratio = _pct_rank(ratio, clan_baseline["ratio"])
+    span = _span_factor(days_since_oldest, full_at_days=2.0, zero_at_days=15.0)
 
-        # Índices 0..1 (agregações com interpretação)
-        recency_i = p_rec
-        volume_i = clamp(0.75 * p_w7 + 0.25 * p_w2)
-        log_i = clamp(0.60 * p_sat + 0.40 * p_den)
-        quality_i = p_ratio
+    # componente de efetividade que NÃO penaliza bursts casuais
+    # se eff_ratio=0 => eff_part = span (2 dias => 1, 15 dias => 0)
+    eff_part = clamp(eff_ratio + (1.0 - eff_ratio) * span)
 
-        # Produto com expoentes (pesa recency e volume mais)
-        # eps evita zero “matemático” quando há empates no percentil.
-        eps = 1e-4
-        recency_i = max(eps, recency_i)
-        volume_i = max(eps, volume_i)
-        log_i = max(eps, log_i)
-        quality_i = max(eps, quality_i)
-
-        score = (
-            (recency_i ** 0.45) *
-            (volume_i  ** 0.30) *
-            (log_i     ** 0.20) *
-            (quality_i ** 0.05)
-        )
-        return round(score, 3)
-
-    # Fallback absoluto (sem baseline)
-    if not math.isfinite(days_eff):
-        recency_score = 0.0
+    if total < N_ACTIVE:
+        # <30 => score abaixo de 0.5 (bem punitivo)
+        main = (total / N_ACTIVE) ** 2  # 0..1
+        score = 0.5 * main
     else:
-        recency_score = clamp(1.0 - days_eff / 7.0)
+        # >=30 => score NUNCA abaixo de 0.5
+        top = (1.0 - X_EFF) * span + X_EFF * eff_part  # 0..1
+        score = 0.5 + 0.5 * top
 
-    vol7 = clamp(w7 / 50.0)
-    vol2 = clamp(w2 / 15.0)
-    sat_s = clamp(sat / 40.0)
-    den_s = clamp(math.log1p(den) / math.log1p(40.0))
-    ratio_s = clamp(ratio)
-
-    score = (
-        0.40 * recency_score +
-        0.25 * vol7 +
-        0.10 * vol2 +
-        0.15 * sat_s +
-        0.05 * den_s +
-        0.05 * ratio_s
-    )
-    return round(score, 3)
+    return round(clamp(score), 3)

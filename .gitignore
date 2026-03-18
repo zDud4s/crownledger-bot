@@ -14,3 +14,11 @@ venv/
 
 # Data / cache
 data/cache/
+
+/data/
+/notebooks/
+/models/
+/scripts/
+
+/.*/
+/docs/

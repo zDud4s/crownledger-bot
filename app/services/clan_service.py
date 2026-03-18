@@ -1,24 +1,24 @@
 from __future__ import annotations
 
+import os
 from datetime import datetime, timezone
 from typing import List, Optional
 
 from domain.models.player import Player
 from domain.models.battle import Battle
-from infrastructure.clash_api.client import ClashApiClient
-from infrastructure.clash_api.clans import sanitize_tag
+from domain.infra.clash_api import ClashApiClient
 
 
-def parse_battle_time(battle_time: str) -> datetime:
-    """
-    Clash Royale battleTime típico:
-    "YYYYMMDDTHHMMSS.000Z"
-    Ex: "20231220T123456.000Z"
-
-    Returns: timezone-aware datetime (UTC)
-    """
-    dt = datetime.strptime(battle_time, "%Y%m%dT%H%M%S.%fZ")
-    return dt.replace(tzinfo=timezone.utc)
+def _parse_battle_time(battle_time: str) -> datetime:
+    for fmt in ("%Y%m%dT%H%M%S.%fZ", "%Y%m%dT%H%M%SZ"):
+        try:
+            return datetime.strptime(battle_time, fmt).replace(tzinfo=timezone.utc)
+        except ValueError:
+            pass
+    try:
+        return datetime.fromisoformat(battle_time.replace("Z", "+00:00"))
+    except ValueError as e:
+        raise ValueError(f"Formato de battleTime não reconhecido: {battle_time}") from e
 
 
 def fetch_players_with_battles(clan_tag: str, max_members: Optional[int] = None) -> List[Player]:
@@ -26,11 +26,13 @@ def fetch_players_with_battles(clan_tag: str, max_members: Optional[int] = None)
     Fetch members + battlelog for each member and return a list of domain Players.
     Note: This is blocking I/O (requests). Call it via asyncio.to_thread inside Discord command.
     """
-    client = ClashApiClient()
+    token = os.getenv("CLASH_API_TOKEN")
+    if not token:
+        raise RuntimeError("CLASH_API_TOKEN não está definido no ambiente (.env).")
 
-    clan_clean = sanitize_tag(clan_tag)
-    members_payload = client.get(f"/clans/%23{clan_clean}/members")
-    members = members_payload.get("items", [])
+    client = ClashApiClient(token=token)
+
+    members = client.get_clan_members(clan_tag)
 
     if max_members is not None:
         members = members[:max_members]
@@ -38,29 +40,17 @@ def fetch_players_with_battles(clan_tag: str, max_members: Optional[int] = None)
     players: List[Player] = []
 
     for m in members:
-        # m contém: tag, name, role, etc.
         p = Player(m["tag"], m["name"])
 
-        ptag = sanitize_tag(m["tag"])
-        battlelog = client.get(f"/players/%23{ptag}/battlelog")
-
-        # battlelog é normalmente uma lista de entries
-        # em alguns casos pode vir com keys; então normalizamos
-        if isinstance(battlelog, dict):
-            entries = battlelog.get("items", [])
-        else:
-            entries = battlelog
+        entries = client.get_player_battlelog(m["tag"])
 
         for b in entries:
             battle_time = b.get("battleTime")
             if not battle_time:
-                # muito raro, mas não vale rebentar tudo por uma entry
                 continue
 
-            ts = parse_battle_time(battle_time)
+            ts = _parse_battle_time(battle_time)
             battle_type = b.get("type", "unknown")
-
-            # Guardamos raw_json para filtros ponderados (casual vs ranked vs challenge)
             p.battles.append(Battle(ts, battle_type, raw_json=b))
 
         players.append(p)

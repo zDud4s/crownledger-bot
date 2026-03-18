@@ -23,7 +23,9 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 if not TOKEN:
     raise RuntimeError("DISCORD_TOKEN não está definido no ambiente (.env).")
 
-GUILD_ID = int(os.getenv("GUILD_ID", "0"))  # recomendado em dev para sync instantâneo
+GUILD_IDS = [
+    int(g) for g in os.getenv("GUILD_IDS", "").split(",") if g.strip()
+]
 
 intents = discord.Intents.default()
 
@@ -39,7 +41,9 @@ class CrownLedgerBot(commands.Bot):
     async def setup_hook(self):
         # 1) Carregar cogs/extensions
         extensions = [
-            "bot.commands.rank",  # tem de existir app/commands/rank.py
+            "bot.commands.clan_health",
+            "bot.commands.war_rank",
+            "bot.commands.player_scout",
         ]
 
         for ext in extensions:
@@ -51,16 +55,17 @@ class CrownLedgerBot(commands.Bot):
 
         # 2) Sync dos slash commands (depois de carregar cogs)
         try:
-            if GUILD_ID:
-                guild = discord.Object(id=GUILD_ID)
-                self.tree.copy_global_to(guild=guild)
-                synced = await self.tree.sync(guild=guild)
-                logging.info(
-                    "Synced %d command(s) to guild %s: %s",
-                    len(synced),
-                    GUILD_ID,
-                    [c.name for c in synced],
-                )
+            if GUILD_IDS:
+                for gid in GUILD_IDS:
+                    guild = discord.Object(id=gid)
+                    self.tree.copy_global_to(guild=guild)
+                    synced = await self.tree.sync(guild=guild)
+                    logging.info(
+                        "Synced %d command(s) to guild %s: %s",
+                        len(synced),
+                        gid,
+                        [c.name for c in synced],
+                    )
             else:
                 synced = await self.tree.sync()
                 logging.info(

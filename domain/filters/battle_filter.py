@@ -1,3 +1,23 @@
+def should_ignore_battle(battle: dict) -> bool:
+    """
+    Tipos que NUNCA devem contar (nem para totals, oldest, last_any, etc.).
+    """
+    btype = (battle.get("type") or "").strip()
+    battle_type = (battle.get("battleType") or "").strip()
+    gm = battle.get("gameMode") or {}
+    gm_name = (gm.get("name") or "").strip()
+
+    # normaliza para lower para apanhar variações
+    btype_l = btype.lower()
+    battle_type_l = battle_type.lower()
+    gm_name_l = gm_name.lower()
+
+    return (
+        "boatBattle" in btype_l
+        or "boatBattle" in battle_type_l
+        or "boatBattle" in gm_name_l
+    )
+
 def battle_weight(battle: dict) -> float:
     """
     Peso (contribuição) desta batalha para a atividade.
@@ -22,22 +42,10 @@ def battle_weight(battle: dict) -> float:
     battle_type_l = battle_type.lower()
     gm_name_l = gm_name.lower()
 
-    # 1) Nunca contar amigáveis / hosted / casual
-    # Nota: alguns battlelogs usam arena.name == "Casual" para casuais/amigáveis.
-    if arena_name == "Casual":
-        return 0.0
+    CASUAL_WEIGHT = 0.10   # amigáveis / 1v1 — melhor que nada mas pouco valor
+    EVENT_WEIGHT  = 0.75   # modos de evento legítimos (ex: Crazy Arena)
 
-    if btype_l in {"friendly", "hosted", "casual"}:
-        return 0.0
-
-    if "friendly" in battle_type_l or "hosted" in battle_type_l or "casual" in battle_type_l:
-        return 0.0
-
-    if "friendly" in gm_name_l or "hosted" in gm_name_l or "casual" in gm_name_l:
-        return 0.0
-
-    # 2) Ranked / ligas / troféus
-    # Path of Legend
+    # 1) Ranked / ligas / troféus (peso total)
     if btype == "pathOfLegend":
         return 1.0
 
@@ -45,14 +53,37 @@ def battle_weight(battle: dict) -> float:
     if gm_name_l == "ladder":
         return 1.0
 
-    # 3) Challenges / events
+    # 2) Challenges / events (ranked)
     if gm_name.startswith("Challenge_"):
         return 1.0
 
-    # 4) (Opcional) Guerra / River Race
-    # Ativa se quiseres contar guerra como atividade válida.
+    # 3) Guerra / River Race
     if btype_l.startswith("river") or btype_l.startswith("clanwar") or "river" in battle_type_l or "clanwar" in battle_type_l:
         return 1.0
 
-    # 5) Restantes não contam
-    return 0.0
+    # 4) Modos de evento legítimos — atividade real, não é ranked mas conta muito
+    # trail = Crazy Arena e outros modos de evento rotativos
+    if btype_l == "trail":
+        return EVENT_WEIGHT
+
+    if "crazy" in gm_name_l or "pickmode" in gm_name_l:
+        return EVENT_WEIGHT
+
+    # 5) Amigáveis / 1v1 / hosted / casual — pouco valor
+    if arena_name == "Casual":
+        return CASUAL_WEIGHT
+
+    if btype_l in {"friendly", "hosted", "casual"}:
+        return CASUAL_WEIGHT
+
+    if "friendly" in battle_type_l or "hosted" in battle_type_l or "casual" in battle_type_l:
+        return CASUAL_WEIGHT
+
+    if "friendly" in gm_name_l or "hosted" in gm_name_l or "casual" in gm_name_l:
+        return CASUAL_WEIGHT
+
+    # 6) Tipos desconhecidos — alguma atividade vale mais que nada
+    return CASUAL_WEIGHT
+
+
+
