@@ -27,6 +27,18 @@ def _score_tier(score: float) -> str:
     return "⚠️"
 
 
+def _utility_label(score: float) -> str:
+    if score >= 0.85:
+        return "Quase exclusivamente ranked/war/challenge"
+    if score >= 0.65:
+        return "Maioria ranked/war — boa qualidade"
+    if score >= 0.45:
+        return "Mix equilibrado de modos"
+    if score >= 0.20:
+        return "Predominantemente casual/evento"
+    return "Quase exclusivamente casual/friendly"
+
+
 def _candidate_label(score: float) -> str:
     if score >= 0.75:
         return "🔥  EXCELENTE CANDIDATO"
@@ -112,7 +124,7 @@ def _build_embed(r: PlayerScoutReport, war_weeks: int) -> discord.Embed:
         value=(
             f"{util_bar} util. `{r.battle_utility:.2f}` {util_tier}\n"
             f"  🏆 Última ranked {'**hoje**' if days_eff_str == 'hoje' else f'há **{days_eff_str}**'}\n"
-            f"  Proporção de batalhas ranked/war/challenge nas últimas 2 semanas"
+            f"  {_utility_label(r.battle_utility)}"
         ),
         inline=False,
     )
