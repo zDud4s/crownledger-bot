@@ -29,21 +29,22 @@ class PlayerScoutReport:
     current_clan_name: str | None
 
     # Atividade (battlelog)
+    days_since_last_any: float
     days_since_last_effective: float
-    weighted_7d: float
-    effective_7d: int
+    raw_7d: int
+    battle_utility: float
     trend_ratio: float | None
     activity_score: float          # 0.0–1.0
 
     # Guerras (RoyaleAPI scraping)
-    war_fetch_error: bool          # True se o scraping falhou (timeout/erro)
-    war_data_available: bool       # True se tiver ≥1 semana com decks_used > 0
-    wars_analyzed: int             # semanas no histórico considerado
-    wars_participated: int         # semanas com decks_used > 0
-    participation: float           # 0.0–1.0
-    fame_efficiency: float         # 0.0–1.0
-    consistency: float             # 0.0–1.0
-    war_utility: float             # 0.0–1.0
+    war_fetch_error: bool
+    war_data_available: bool
+    wars_analyzed: int
+    wars_participated: int
+    participation: float
+    fame_efficiency: float
+    consistency: float
+    war_utility: float
     mean_fame_per_deck: float
 
     # Score final
@@ -67,8 +68,6 @@ async def scout_player(player_tag: str, war_weeks: int = 10) -> PlayerScoutRepor
     token = os.environ["CLASH_API_TOKEN"]
     loop = asyncio.get_event_loop()
 
-    # Use separate clients to avoid concurrent access to the same requests.Session.
-    # Profile + battlelog run sequentially in one thread; scraping runs in parallel.
     def _fetch_api() -> tuple[dict, list]:
         client = ClashApiClient(token=token)
         prof = client.get_player_profile(player_tag)
@@ -98,14 +97,14 @@ async def scout_player(player_tag: str, war_weeks: int = 10) -> PlayerScoutRepor
             continue
         player.battles.append(Battle(ts, b.get("type", "unknown"), raw_json=b))
 
-    snap = player.activity_snapshot()
-    act_score = recent_activity_score(snap)
+    prof = player.activity_profile()
+    act_score = prof.recent_activity_score
 
-    weighted_7d = float(snap.get("weighted_7d", 0.0))
-    weighted_14d = float(snap.get("weighted_14d", 0.0))
-    prev_7d = max(0.0, weighted_14d - weighted_7d)
+    raw_7d = prof.raw_7d
+    raw_14d = prof.raw_14d
+    prev_7d = max(0, raw_14d - raw_7d)
     trend_ratio: float | None = (
-        weighted_7d / max(0.1, prev_7d) if (weighted_7d > 0 or prev_7d > 0) else None
+        raw_7d / max(1, prev_7d) if (raw_7d > 0 or prev_7d > 0) else None
     )
 
     # --- Guerras ---
@@ -136,9 +135,10 @@ async def scout_player(player_tag: str, war_weeks: int = 10) -> PlayerScoutRepor
         wins=profile.get("wins", 0),
         losses=profile.get("losses", 0),
         current_clan_name=current_clan_name,
-        days_since_last_effective=snap.get("days_since_last_effective", float("inf")),
-        weighted_7d=weighted_7d,
-        effective_7d=int(snap.get("effective_7d", 0)),
+        days_since_last_any=prof.days_since_last_any,
+        days_since_last_effective=prof.days_since_last_effective,
+        raw_7d=raw_7d,
+        battle_utility=prof.battle_utility,
         trend_ratio=trend_ratio,
         activity_score=act_score,
         war_fetch_error=war_fetch_error,
