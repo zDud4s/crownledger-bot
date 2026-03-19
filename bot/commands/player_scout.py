@@ -91,15 +91,20 @@ def _build_embed(r: PlayerScoutReport, war_weeks: int) -> discord.Embed:
     # ── Atividade ──
     act_bar = _score_bar(r.activity_score)
     act_tier = _score_tier(r.activity_score)
-    days_str = _days_label(r.days_since_last_effective)
+    util_bar = _score_bar(r.battle_utility)
+    util_tier = _score_tier(r.battle_utility)
+    days_any_str = _days_label(r.days_since_last_any)
+    days_eff_str = _days_label(r.days_since_last_effective)
     trend_str = _trend_arrow(r.trend_ratio)
 
     embed.add_field(
         name="🎮  Atividade Recente",
         value=(
             f"{act_bar} act. `{r.activity_score:.2f}` {act_tier}\n"
-            f"  📅 Última ranked {'**hoje**' if days_str == 'hoje' else f'há **{days_str}**'}\n"
-            f"  ⚔️ Batalhas efetivas: **{r.effective_7d}** (7d)  ·  Tendência: {trend_str}"
+            f"  📅 Última batalha {'**hoje**' if days_any_str == 'hoje' else f'há **{days_any_str}**'}"
+            f"  ·  Última ranked {'**hoje**' if days_eff_str == 'hoje' else f'há **{days_eff_str}**'}\n"
+            f"  ⚔️ Batalhas (7d): **{r.raw_7d}**  ·  Tendência: {trend_str}\n"
+            f"{util_bar} util. `{r.battle_utility:.2f}` {util_tier}  🎯 qualidade de modos"
         ),
         inline=False,
     )
