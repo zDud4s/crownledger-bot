@@ -6,6 +6,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 
+from app.input_normalizers import clamp_int, normalize_player_tag
 from app.use_cases.player_scout import PlayerScoutReport, scout_player
 
 
@@ -200,11 +201,8 @@ class PlayerScoutCog(commands.Cog):
             )
             return
 
-        wars = max(5, min(int(wars), 20))
-
-        player_tag = player_tag.strip().upper()
-        if not player_tag.startswith("#"):
-            player_tag = "#" + player_tag
+        wars = clamp_int(wars, 5, 20)
+        player_tag = normalize_player_tag(player_tag)
 
         await interaction.response.defer(thinking=True)
 

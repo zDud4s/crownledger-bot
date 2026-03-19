@@ -8,6 +8,7 @@ import requests
 from discord import app_commands
 from discord.ext import commands
 
+from app.input_normalizers import clamp_int, normalize_clan_tag
 from app.use_cases.war_rank import WarPlayerStats, rank_players_by_war_utility
 
 _MEDALS = {1: "🥇", 2: "🥈", 3: "🥉"}
@@ -141,11 +142,8 @@ class WarRankCog(commands.Cog):
             )
             return
 
-        wars = max(1, min(int(wars), 10))
-
-        clan_tag = clan_tag.strip().upper()
-        if not clan_tag.startswith("#"):
-            clan_tag = "#" + clan_tag
+        wars = clamp_int(wars, 1, 10)
+        clan_tag = normalize_clan_tag(clan_tag)
 
         await interaction.response.defer(thinking=True)
 

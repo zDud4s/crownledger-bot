@@ -1,24 +1,51 @@
-# Python
+# Python cache / test artifacts
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
 
-# Virtual env
+# Virtual environments
+.venv/
 venv/
+env/
 
-# Environment variables
+# Local environment files
 .env
+.env.*
+!.env.example
 
-# IDE
+# IDE / OS noise
 .vscode/
 .idea/
+.DS_Store
+Thumbs.db
 
-# Data / cache
-data/cache/
+# Local tool state
+.playwright-mcp/
 
-/data/
-/notebooks/
+# Build outputs
+dist/
+build/
+!build/
+build/*
+!build/*.spec
+
+# Local data and exploratory work
+/data/*
+!/data/__init__.py
 /models/
+/notebooks/
+*.ipynb
 /scripts/
-
-/.*/
 /docs/
+
+# Local databases and binary artifacts
+*.db
+*.sqlite
+*.sqlite3
+*.joblib

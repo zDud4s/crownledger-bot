@@ -9,6 +9,7 @@ import requests
 from discord import app_commands
 from discord.ext import commands
 
+from app.input_normalizers import normalize_clan_tag
 from app.services.clan_service import fetch_players_with_battles
 from app.use_cases.clan_health import ClanHealthReport, PlayerHealth, compute_clan_health
 from domain.scoring.recent_activity_score import trend_arrow
@@ -194,9 +195,7 @@ class ClanHealthCog(commands.Cog):
             )
             return
 
-        clan_tag = clan_tag.strip().upper()
-        if not clan_tag.startswith("#"):
-            clan_tag = "#" + clan_tag
+        clan_tag = normalize_clan_tag(clan_tag)
 
         await interaction.response.defer(thinking=True)
 
