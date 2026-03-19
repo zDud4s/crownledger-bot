@@ -101,8 +101,7 @@ def _build_embed(r: PlayerScoutReport, war_weeks: int) -> discord.Embed:
         name="🎮  Atividade Recente",
         value=(
             f"{act_bar} act. `{r.activity_score:.2f}` {act_tier}\n"
-            f"  📅 Última batalha {'**hoje**' if days_any_str == 'hoje' else f'há **{days_any_str}**'}"
-            f"  ·  Última ranked {'**hoje**' if days_eff_str == 'hoje' else f'há **{days_eff_str}**'}\n"
+            f"  📅 Última batalha {'**hoje**' if days_any_str == 'hoje' else f'há **{days_any_str}**'}\n"
             f"  ⚔️ Batalhas (7d): **{r.raw_7d}**  ·  Tendência: {trend_str}"
         ),
         inline=False,
@@ -110,7 +109,11 @@ def _build_embed(r: PlayerScoutReport, war_weeks: int) -> discord.Embed:
 
     embed.add_field(
         name="🎯  Utilidade de Modos",
-        value=f"{util_bar} util. `{r.battle_utility:.2f}` {util_tier}",
+        value=(
+            f"{util_bar} util. `{r.battle_utility:.2f}` {util_tier}\n"
+            f"  🏆 Última ranked {'**hoje**' if days_eff_str == 'hoje' else f'há **{days_eff_str}**'}\n"
+            f"  Proporção de batalhas ranked/war/challenge nas últimas 2 semanas"
+        ),
         inline=False,
     )
 
