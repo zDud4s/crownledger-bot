@@ -103,9 +103,14 @@ def _build_embed(r: PlayerScoutReport, war_weeks: int) -> discord.Embed:
             f"{act_bar} act. `{r.activity_score:.2f}` {act_tier}\n"
             f"  📅 Última batalha {'**hoje**' if days_any_str == 'hoje' else f'há **{days_any_str}**'}"
             f"  ·  Última ranked {'**hoje**' if days_eff_str == 'hoje' else f'há **{days_eff_str}**'}\n"
-            f"  ⚔️ Batalhas (7d): **{r.raw_7d}**  ·  Tendência: {trend_str}\n"
-            f"{util_bar} util. `{r.battle_utility:.2f}` {util_tier}  🎯 qualidade de modos"
+            f"  ⚔️ Batalhas (7d): **{r.raw_7d}**  ·  Tendência: {trend_str}"
         ),
+        inline=False,
+    )
+
+    embed.add_field(
+        name="🎯  Utilidade de Modos",
+        value=f"{util_bar} util. `{r.battle_utility:.2f}` {util_tier}",
         inline=False,
     )
 
