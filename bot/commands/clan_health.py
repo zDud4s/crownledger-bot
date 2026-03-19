@@ -37,15 +37,15 @@ _SECTION_SEP = "─" * 28
 
 
 def _format_entry(ph: PlayerHealth, tier: str) -> list[str]:
-    """Devolve 2 linhas por jogador no estilo /war-rank."""
+    """Devolve 3 linhas por jogador no estilo /war-rank."""
     emoji = _tier_emoji(tier)
 
     # Dias desde última batalha (qualquer)
     d = ph.days_since_last_any
     days_str = f"`{'∞':>4}`" if not math.isfinite(float(d)) else f"`{float(d):>4.1f}d`"
 
-    # Batalhas ranked nos últimos 7 dias
-    eff7 = f"`{ph.effective_7d:>2}`"
+    # Batalhas nos últimos 7 dias (contagem bruta)
+    raw7 = f"`{ph.raw_7d:>2}`"
 
     # Tendência
     arrow = trend_arrow(ph.trend_ratio)
@@ -53,9 +53,13 @@ def _format_entry(ph: PlayerHealth, tier: str) -> list[str]:
     bar = _score_bar(ph.score)
     score_str = f"`{ph.score:.2f}`"
 
+    util_bar = _score_bar(ph.battle_utility)
+    util_str = f"`{ph.battle_utility:.2f}`"
+
     line1 = f"**{ph.name}** — {emoji} ativ. {score_str}"
-    line2 = f"{_INDENT}{bar}  📅 {days_str} sem jogar · ⚔️ {eff7}/7d · {arrow}"
-    return [line1, line2]
+    line2 = f"{_INDENT}{bar}  📅 {days_str} sem jogar · ⚔️ {raw7}/7d · {arrow}"
+    line3 = f"{_INDENT}{util_bar}  🎯 utilidade {util_str}"
+    return [line1, line2, line3]
 
 
 # ── construção das páginas ─────────────────────────────────────────────────────
