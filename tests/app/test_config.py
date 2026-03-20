@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from app.config import (
+    DEFAULT_GITHUB_REPOSITORY,
     LocalSettings,
     load_local_settings,
     load_local_settings_result,
@@ -13,6 +14,7 @@ def test_load_local_settings_returns_defaults_when_missing(tmp_path):
     settings = load_local_settings(base_dir=tmp_path)
 
     assert settings == LocalSettings()
+    assert settings.github_repo == DEFAULT_GITHUB_REPOSITORY
 
 
 def test_save_and_load_local_settings_round_trip(tmp_path):
@@ -22,7 +24,7 @@ def test_save_and_load_local_settings_round_trip(tmp_path):
         last_used_player_tag="#PLAYER123",
         war_history_enabled=False,
         release_channel="beta",
-        github_repo="owner/repo",
+        github_repo=DEFAULT_GITHUB_REPOSITORY,
     )
 
     save_local_settings(original, base_dir=tmp_path)
@@ -54,3 +56,12 @@ def test_load_local_settings_result_falls_back_when_json_is_invalid(tmp_path):
 
     assert result.settings == LocalSettings()
     assert result.error is not None
+
+
+def test_load_local_settings_result_uses_default_repository_when_missing_or_blank(tmp_path):
+    settings_path = tmp_path / "settings.json"
+    settings_path.write_text('{"github_repo": ""}', encoding="utf-8")
+
+    result = load_local_settings_result(base_dir=tmp_path)
+
+    assert result.settings.github_repo == DEFAULT_GITHUB_REPOSITORY

@@ -8,6 +8,7 @@ from pathlib import Path
 
 APP_DIR_NAME = "CrownLedger"
 SETTINGS_FILENAME = "settings.json"
+DEFAULT_GITHUB_REPOSITORY = "zDud4s/crownledger-bot"
 
 
 @dataclass
@@ -17,7 +18,7 @@ class LocalSettings:
     last_used_player_tag: str = ""
     war_history_enabled: bool = True
     release_channel: str = "stable"
-    github_repo: str = ""
+    github_repo: str = DEFAULT_GITHUB_REPOSITORY
 
 
 @dataclass(frozen=True)
@@ -64,7 +65,10 @@ def load_local_settings_result(base_dir: str | Path | None = None) -> LocalSetti
     defaults = LocalSettings()
     values = {}
     for field in fields(LocalSettings):
-        values[field.name] = raw.get(field.name, getattr(defaults, field.name))
+        value = raw.get(field.name, getattr(defaults, field.name))
+        if field.name == "github_repo":
+            value = str(value or "").strip() or DEFAULT_GITHUB_REPOSITORY
+        values[field.name] = value
     return LocalSettingsLoadResult(settings=LocalSettings(**values))
 
 

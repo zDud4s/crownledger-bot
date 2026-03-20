@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from app.config import DEFAULT_GITHUB_REPOSITORY
 from app.update_service import check_for_update, is_newer_version, version_key
 
 
@@ -22,10 +23,24 @@ def test_is_newer_version_handles_desktop_tag_prefix():
     assert is_newer_version("desktop-v0.2.0", "0.1.0")
 
 
-def test_check_for_update_returns_not_configured_when_repo_missing():
+def test_check_for_update_uses_default_repository_when_repo_missing(monkeypatch):
+    payload = {
+        "tag_name": "desktop-v0.1.0",
+        "html_url": f"https://github.com/{DEFAULT_GITHUB_REPOSITORY}/releases/tag/desktop-v0.1.0",
+        "assets": [],
+    }
+    observed = {}
+
+    def fake_get(url, *args, **kwargs):
+        observed["url"] = url
+        return _FakeResponse(payload)
+
+    monkeypatch.setattr("app.update_service.requests.get", fake_get)
+
     result = check_for_update(current_version="0.1.0", repository="")
 
-    assert result.status == "not_configured"
+    assert result.status == "up_to_date"
+    assert observed["url"].endswith(f"/repos/{DEFAULT_GITHUB_REPOSITORY}/releases/latest")
 
 
 def test_check_for_update_detects_available_release(monkeypatch):

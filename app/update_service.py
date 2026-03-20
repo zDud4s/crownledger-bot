@@ -8,7 +8,7 @@ from pathlib import Path
 
 import requests
 
-from app.config import get_app_data_dir
+from app.config import DEFAULT_GITHUB_REPOSITORY, get_app_data_dir
 
 
 _VERSION_RE = re.compile(r"^(?P<core>\d+(?:\.\d+){0,2})(?P<suffix>.*)$")
@@ -83,12 +83,7 @@ def check_for_update(
     release_channel: str = "stable",
     timeout_s: int = 10,
 ) -> UpdateCheckResult:
-    if not repository.strip():
-        return UpdateCheckResult(
-            status="not_configured",
-            current_version=current_version,
-            message="GitHub repository is not configured.",
-        )
+    repository = repository.strip() or DEFAULT_GITHUB_REPOSITORY
 
     url = _release_api_url(repository, release_channel)
 

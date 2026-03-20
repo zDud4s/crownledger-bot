@@ -16,6 +16,12 @@ class PlayerScoutViewModel:
     utility_text: str
     wars_text: str
     candidate_text: str
+    # Raw scores for ScoreBar rendering in the desktop UI
+    activity_score: float = 0.0
+    battle_utility: float = 0.0
+    war_utility: float = 0.0
+    war_data_available: bool = False
+    candidate_score: float = 0.0
 
 
 def _score_tier(score: float) -> str:
@@ -119,4 +125,9 @@ def present_player_scout(report: PlayerScoutReport) -> PlayerScoutViewModel:
         utility_text=utility_text,
         wars_text=wars_text,
         candidate_text=candidate_text,
+        activity_score=report.activity_score,
+        battle_utility=report.battle_utility,
+        war_utility=report.war_utility if report.war_data_available else 0.0,
+        war_data_available=report.war_data_available,
+        candidate_score=report.candidate_score,
     )
