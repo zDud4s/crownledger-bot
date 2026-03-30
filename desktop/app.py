@@ -23,6 +23,11 @@ def create_application(argv: list[str] | None = None) -> QApplication:
 
 def run(argv: list[str] | None = None) -> int:
     app = create_application(argv)
+
+    from desktop.playwright_setup import PlaywrightSetupDialog, chromium_is_ready
+    if not chromium_is_ready():
+        PlaywrightSetupDialog().exec()
+
     window = CrownLedgerMainWindow()
     window.show()
 

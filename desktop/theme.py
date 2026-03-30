@@ -57,9 +57,9 @@ HEADER_HEIGHT   = 58
 SCORE_BAR_H     = 26
 TIER_BADGE_W    = 78
 TIER_BADGE_H    = 22
-CARD_RADIUS     = 7
-INPUT_RADIUS    = 4
-BUTTON_RADIUS   = 4
+CARD_RADIUS     = 12
+INPUT_RADIUS    = 8
+BUTTON_RADIUS   = 8
 
 # ── Tier config (used by TierBadge) ──────────────────────────────────────────
 TIER_CONFIGS: dict[str, tuple[str, str, str]] = {
@@ -129,13 +129,11 @@ QTabBar::tab {{
 
 QTabBar::tab:selected {{
     color: {GOLD_MID};
-    border-bottom: 3px solid {GOLD_MID};
     background-color: {BG_SURFACE};
 }}
 
 QTabBar::tab:hover:!selected {{
     color: {TEXT_SECONDARY};
-    border-bottom: 3px solid {GOLD_MUTED};
     background-color: {BG_SURFACE};
 }}
 
@@ -276,7 +274,7 @@ QTableWidget {{
     alternate-background-color: {BG_SURFACE};
     gridline-color: {BORDER_DARK};
     border: 1px solid {BORDER_DARK};
-    border-radius: 4px;
+    border-radius: 10px;
     color: {TEXT_PRIMARY};
     font-size: 13px;
     selection-background-color: {BG_SURFACE_3};
@@ -301,7 +299,7 @@ QHeaderView {{
 
 QHeaderView::section {{
     background-color: {BG_SURFACE};
-    color: {GOLD_DIM};
+    color: {GOLD_MID};
     font-family: "{FONT_BODY}";
     font-size: 11px;
     font-weight: bold;
@@ -464,6 +462,6 @@ QToolTip {{
     color: {TEXT_PRIMARY};
     padding: 5px 9px;
     font-size: 12px;
-    border-radius: 3px;
+    border-radius: 8px;
 }}
 """

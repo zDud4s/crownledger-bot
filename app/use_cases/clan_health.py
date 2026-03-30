@@ -4,7 +4,6 @@ from dataclasses import dataclass
 
 from domain.models.player import Player
 from domain.scoring.recent_activity_score import (
-    recent_activity_score,
     TIER_INACTIVE_MAX,
     TIER_AT_RISK_MAX,
 )
@@ -58,25 +57,16 @@ def compute_clan_health(clan_tag: str, players: list[Player]) -> ClanHealthRepor
             battle_utility=prof.battle_utility,
         ))
 
-    HIGH_VOLUME_PER_DAY = 5.0
-
-    def _no_ranked(e: PlayerHealth) -> bool:
-        return not (e.days_since_last_effective < float("inf"))
-
-    def _high_volume(e: PlayerHealth) -> bool:
-        return (e.raw_7d / 7.0) >= HIGH_VOLUME_PER_DAY
-
     inactive = sorted(
         [e for e in entries if e.score < TIER_INACTIVE_MAX],
         key=lambda e: e.score,
     )
     at_risk = sorted(
-        [e for e in entries if TIER_INACTIVE_MAX <= e.score < TIER_AT_RISK_MAX]
-        + [e for e in entries if e.score >= TIER_AT_RISK_MAX and _no_ranked(e) and not _high_volume(e)],
+        [e for e in entries if TIER_INACTIVE_MAX <= e.score < TIER_AT_RISK_MAX],
         key=lambda e: e.score,
     )
     active = sorted(
-        [e for e in entries if e.score >= TIER_AT_RISK_MAX and not (_no_ranked(e) and not _high_volume(e))],
+        [e for e in entries if e.score >= TIER_AT_RISK_MAX],
         key=lambda e: e.score,
     )
 

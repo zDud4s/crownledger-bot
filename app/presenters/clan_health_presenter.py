@@ -4,7 +4,7 @@ import math
 from dataclasses import dataclass
 
 from app.use_cases.clan_health import ClanHealthReport, PlayerHealth
-from domain.scoring.recent_activity_score import TIER_AT_RISK_MAX, TIER_INACTIVE_MAX, trend_arrow
+from domain.scoring.recent_activity_score import trend_arrow
 
 
 @dataclass(frozen=True)
@@ -32,14 +32,6 @@ class ClanHealthViewModel:
     rows: list[ClanHealthRowViewModel]
 
 
-def _tier_meta(score: float) -> tuple[str, str, str]:
-    if score < TIER_INACTIVE_MAX:
-        return "inactive", "Inactive", "RED"
-    if score < TIER_AT_RISK_MAX:
-        return "at_risk", "At Risk", "YELLOW"
-    return "active", "Active", "GREEN"
-
-
 def _format_days(days: float) -> str:
     if not math.isfinite(float(days)):
         return "Never"
@@ -48,8 +40,7 @@ def _format_days(days: float) -> str:
     return f"{days:.1f}d"
 
 
-def _present_player(player: PlayerHealth) -> ClanHealthRowViewModel:
-    tier_key, tier_label, tier_badge = _tier_meta(player.score)
+def _present_player(player: PlayerHealth, tier_key: str, tier_label: str, tier_badge: str) -> ClanHealthRowViewModel:
     return ClanHealthRowViewModel(
         tier_key=tier_key,
         tier_label=tier_label,
@@ -65,10 +56,11 @@ def _present_player(player: PlayerHealth) -> ClanHealthRowViewModel:
 
 
 def present_clan_health(report: ClanHealthReport, show_active: bool) -> ClanHealthViewModel:
-    rows = [
-        _present_player(player)
-        for player in [*report.inactive, *report.at_risk, *([*report.active] if show_active else [])]
-    ]
+    rows = (
+        [_present_player(p, "inactive", "Inactive", "RED") for p in report.inactive]
+        + [_present_player(p, "at_risk", "At Risk", "YELLOW") for p in report.at_risk]
+        + ([_present_player(p, "active", "Active", "GREEN") for p in report.active] if show_active else [])
+    )
 
     summary_text = (
         f"Clan {report.clan_tag} | Members: {report.total_members} | "

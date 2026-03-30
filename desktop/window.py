@@ -1,11 +1,12 @@
 from __future__ import annotations
 
-from PySide6.QtCore import QRectF, Qt
+from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRect, QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen
 from PySide6.QtWidgets import (
     QHBoxLayout,
     QLabel,
     QMainWindow,
+    QTabBar,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -21,6 +22,7 @@ from desktop.theme import (
     FONT_BODY,
     FONT_DISPLAY,
     GOLD_BRIGHT,
+    GOLD_DIM,
     GOLD_MID,
     TEXT_MUTED,
 )
@@ -87,6 +89,68 @@ class _HeaderBar(QWidget):
         painter.end()
 
 
+class _AnimatedTabBar(QTabBar):
+    """QTabBar with a sliding gold indicator that animates between tabs."""
+
+    _INDICATOR_H = 3
+    _INDICATOR_MARGIN = 10
+
+    def __init__(self, parent=None) -> None:
+        super().__init__(parent)
+        self._indicator = QWidget(self)
+        self._indicator.setFixedHeight(self._INDICATOR_H)
+        self._indicator.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
+        self._indicator.setStyleSheet(
+            f"background: qlineargradient(x1:0, y1:0, x2:1, y2:0,"
+            f" stop:0 {GOLD_DIM}, stop:0.5 {GOLD_BRIGHT}, stop:1 {GOLD_MID});"
+            f" border-radius: 1px;"
+        )
+        self._indicator.raise_()
+        self._indicator.hide()
+
+        self._anim = QPropertyAnimation(self._indicator, b"geometry")
+        self._anim.setDuration(220)
+        self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+
+        self.currentChanged.connect(self._slide_to)
+
+    def _target_rect(self, index: int) -> QRect:
+        rect = self.tabRect(index)
+        m = self._INDICATOR_MARGIN
+        return QRect(
+            rect.x() + m,
+            self.height() - self._INDICATOR_H,
+            max(1, rect.width() - 2 * m),
+            self._INDICATOR_H,
+        )
+
+    def _slide_to(self, index: int) -> None:
+        if index < 0:
+            return
+        target = self._target_rect(index)
+        if not self._indicator.isVisible():
+            self._indicator.setGeometry(target)
+            self._indicator.show()
+            return
+        self._anim.stop()
+        self._anim.setStartValue(self._indicator.geometry())
+        self._anim.setEndValue(target)
+        self._anim.start()
+
+    def showEvent(self, event) -> None:
+        super().showEvent(event)
+        idx = self.currentIndex()
+        if idx >= 0:
+            self._indicator.setGeometry(self._target_rect(idx))
+            self._indicator.show()
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        idx = self.currentIndex()
+        if idx >= 0:
+            self._indicator.setGeometry(self._target_rect(idx))
+
+
 class CrownLedgerMainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
@@ -108,11 +172,17 @@ class CrownLedgerMainWindow(QMainWindow):
         # ── Tab widget ─────────────────────────────────────────────────────
         tabs = QTabWidget()
         tabs.setDocumentMode(True)   # removes extra frame around tab bar
+        tabs.setTabBar(_AnimatedTabBar())
 
         tabs.addTab(ClanHealthWidget(), "  Clan Health  ")
         tabs.addTab(WarRankWidget(),    "  War Rank  ")
         tabs.addTab(PlayerScoutWidget(), "  Scout  ")
         tabs.addTab(SettingsWidget(),   "  Settings  ")
+
+        # Trigger initial indicator placement after tabs are added
+        from PySide6.QtCore import QTimer
+        tab_bar = tabs.tabBar()
+        QTimer.singleShot(0, lambda: tab_bar._slide_to(tabs.currentIndex()))
 
         root_layout.addWidget(tabs, 1)
 

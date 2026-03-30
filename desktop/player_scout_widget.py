@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import asyncio
 
-from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, QThread, Qt, Signal
+from PySide6.QtCore import QObject, QThread, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QLinearGradient, QPainter, QPen
 from PySide6.QtWidgets import (
     QFrame,
-    QGraphicsOpacityEffect,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -353,6 +352,8 @@ class PlayerScoutWidget(QWidget):
         self.spinner.start()
         self._header_card.hide()
         self._grid_widget.hide()
+        self._wars_score_bar.set_value(0.0)
+        self._wars_score_bar.setVisible(True)  # reset; hidden again if no data
 
         thread = QThread(self)
         worker = _PlayerScoutWorker(
@@ -410,24 +411,18 @@ class PlayerScoutWidget(QWidget):
         # Show grid
         self._grid_widget.show()
 
-        # ── Fade in results ────────────────────────────────────────────────
-        for widget in (self._header_card, self._grid_widget):
-            effect = QGraphicsOpacityEffect(widget)
-            widget.setGraphicsEffect(effect)
-            anim = QPropertyAnimation(effect, b"opacity", widget)
-            anim.setDuration(320)
-            anim.setStartValue(0.0)
-            anim.setEndValue(1.0)
-            anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-            anim.start()
+
+        # ── Wars ScoreBar — hide when no war data ──────────────────────────
+        self._wars_score_bar.setVisible(vm.war_data_available)
 
         # ── Animate score bars (staggered) ─────────────────────────────────
         from PySide6.QtCore import QTimer
         bars_targets = [
             (self._activity_score_bar, vm.activity_score),
             (self._utility_score_bar,  vm.battle_utility),
-            (self._wars_score_bar,     vm.war_utility),
         ]
+        if vm.war_data_available:
+            bars_targets.append((self._wars_score_bar, vm.war_utility))
         for idx, (bar, target) in enumerate(bars_targets):
             QTimer.singleShot(idx * 80, lambda b=bar, t=target: b.animate_to(t))
 

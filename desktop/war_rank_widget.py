@@ -176,9 +176,9 @@ class WarRankWidget(QWidget):
         self.table.verticalHeader().setDefaultSectionSize(ROW_HEIGHT)
 
         self.table.setColumnWidth(0, 44)   # Rank
-        self.table.setColumnWidth(1, 90)   # Tier badge
+        self.table.setColumnWidth(1, 110)  # Tier badge
         self.table.setColumnWidth(2, 140)  # Name
-        self.table.setColumnWidth(3, 100)  # Tag
+        self.table.setColumnWidth(3, 115)  # Tag
         self.table.setColumnWidth(4, 140)  # Utility bar
         self.table.setColumnWidth(5, 70)   # Wars
         self.table.setColumnWidth(6, 70)   # Part.
@@ -237,10 +237,13 @@ class WarRankWidget(QWidget):
         self.summary_label.setText(f"Failed to load war ranking: {data}")
 
     def _render_result(self, vm: WarRankViewModel) -> None:
-        self.summary_label.setText(
-            f"{vm.clan_tag}  ·  {vm.total_players} players  ·  "
+        summary = (
+            f"<b>{vm.clan_tag}</b>  ·  "
+            f"<span style='color:{GREEN_ACTIVE}'><b>{vm.total_players}</b></span> players  ·  "
             f"Wars requested: {vm.requested_wars}  ·  Wars used: {vm.actual_wars}"
         )
+        self.summary_label.setText(summary)
+        self.summary_label.setTextFormat(Qt.TextFormat.RichText)
 
         self.table.setRowCount(len(vm.rows))
         util_bars: list[ScoreBar] = []
@@ -270,10 +273,11 @@ class WarRankWidget(QWidget):
             name_item.setFont(body_font)
             self.table.setItem(i, 2, name_item)
 
-            # Col 3 — Tag (monospace, accent colour)
+            # Col 3 — Tag (monospace, full tag as tooltip)
             tag_item = QTableWidgetItem(row.tag)
             tag_item.setFont(mono_font)
             tag_item.setForeground(QColor(GOLD_MID))
+            tag_item.setToolTip(row.tag)
             self.table.setItem(i, 3, tag_item)
 
             # Col 4 — Utility bar (animated)

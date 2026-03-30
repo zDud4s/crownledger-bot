@@ -191,9 +191,9 @@ class ClanHealthWidget(QWidget):
         self.table.horizontalHeader().setStretchLastSection(False)
 
         # Column widths
-        self.table.setColumnWidth(0, 90)   # Tier badge
+        self.table.setColumnWidth(0, 110)  # Tier badge
         self.table.setColumnWidth(1, 140)  # Name
-        self.table.setColumnWidth(2, 100)  # Tag
+        self.table.setColumnWidth(2, 120)  # Tag
         self.table.setColumnWidth(3, 130)  # Score bar
         self.table.setColumnWidth(4, 130)  # Utility bar
         self.table.setColumnWidth(5, 100)  # Last battle
@@ -251,14 +251,14 @@ class ClanHealthWidget(QWidget):
         self.summary_label.setText(f"Failed to load clan health: {data}")
 
     def _render_result(self, vm: ClanHealthViewModel) -> None:
-        # Build summary with colour-coded counts
         summary = (
-            f"{vm.clan_tag}  ·  {vm.total_members} members  ·  "
-            f"Inactive: {vm.inactive_count}  ·  "
-            f"At Risk: {vm.at_risk_count}  ·  "
-            f"Active: {vm.active_count}"
+            f"<b>{vm.clan_tag}</b>  ·  {vm.total_members} members  ·  "
+            f"Inactive: <span style='color:{RED_INACTIVE}'><b>{vm.inactive_count}</b></span>  ·  "
+            f"At Risk: <span style='color:{AMBER_RISK}'><b>{vm.at_risk_count}</b></span>  ·  "
+            f"Active: <span style='color:{GREEN_ACTIVE}'><b>{vm.active_count}</b></span>"
         )
         self.summary_label.setText(summary)
+        self.summary_label.setTextFormat(Qt.TextFormat.RichText)
 
         self.table.setRowCount(len(vm.rows))
         score_bars: list[ScoreBar] = []
@@ -281,11 +281,12 @@ class ClanHealthWidget(QWidget):
             name_item.setFont(body_font)
             self.table.setItem(i, 1, name_item)
 
-            # Col 2 — Tag (monospace)
+            # Col 2 — Tag (monospace, full tag as tooltip)
             tag_item = QTableWidgetItem(row.tag)
             tag_item.setBackground(tint)
             tag_item.setFont(mono_font)
             tag_item.setForeground(QColor(GOLD_MID))
+            tag_item.setToolTip(row.tag)
             self.table.setItem(i, 2, tag_item)
 
             # Col 3 — Score bar (animated)
