@@ -44,6 +44,7 @@ build/*
 /scripts/
 /docs/
 /.*/
+!/.github/
 *.md
 !README.md
 

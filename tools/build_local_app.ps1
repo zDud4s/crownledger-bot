@@ -35,7 +35,7 @@ if ($Clean) {
 python -m PyInstaller build\crownledger_local.spec --noconfirm --clean
 python -m PyInstaller build\crownledger_updater.spec --noconfirm --clean
 
-Copy-Item dist\CrownLedgerUpdater\CrownLedgerUpdater.exe dist\CrownLedgerLocal\CrownLedgerUpdater.exe -Force
+Copy-Item dist\CrownLedgerUpdater.exe dist\CrownLedgerLocal\CrownLedgerUpdater.exe -Force
 
 New-Item -ItemType Directory -Path $releaseDir -Force | Out-Null
 if (Test-Path $zipPath) {
