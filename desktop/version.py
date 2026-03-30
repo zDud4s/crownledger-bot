@@ -1,6 +1,6 @@
 APP_NAME = "CrownLedger Local"
 RELEASE_TAG_PREFIX = "desktop-v"
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 
 def release_tag_for(version: str | None = None) -> str:
