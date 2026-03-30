@@ -9,6 +9,9 @@ on:
     tags-ignore:
       - "desktop-v*"
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   verify-windows:
     runs-on: windows-latest
