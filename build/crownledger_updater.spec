@@ -25,26 +25,20 @@ analysis = Analysis(
 
 pyz = PYZ(analysis.pure, analysis.zipped_data, cipher=block_cipher)
 
+# Onefile mode: binaries/datas embedded directly in the exe, no COLLECT needed.
+# This allows the updater to be copied to any location without needing _internal/.
 exe = EXE(
     pyz,
     analysis.scripts,
+    analysis.binaries,
+    analysis.zipfiles,
+    analysis.datas,
     [],
-    exclude_binaries=True,
     name="CrownLedgerUpdater",
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
     upx=True,
-    console=False,
-)
-
-coll = COLLECT(
-    exe,
-    analysis.binaries,
-    analysis.zipfiles,
-    analysis.datas,
-    strip=False,
-    upx=True,
     upx_exclude=[],
-    name="CrownLedgerUpdater",
+    console=False,
 )

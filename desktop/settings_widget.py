@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+import shutil
+import subprocess
+import sys
+
 from PySide6.QtCore import QObject, Qt, QThread, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
@@ -25,7 +29,7 @@ from app.config import (
 )
 from app.input_normalizers import normalize_clan_tag, normalize_player_tag
 from app.update_service import StagedUpdate, UpdateCheckResult, check_for_update, stage_update_from_release
-from desktop.runtime import can_apply_inplace_update, launch_staged_update
+from desktop.runtime import application_dir, can_apply_inplace_update, is_frozen_app, launch_staged_update
 from desktop.theme import (
     BORDER_DARK,
     BG_SURFACE,
@@ -232,9 +236,17 @@ class SettingsWidget(QWidget):
         self.reload_button.clicked.connect(self.reload_settings)
         self.save_button = QPushButton("Save Settings")
         self.save_button.clicked.connect(self.save_settings)
+        self.uninstall_button = QPushButton("Uninstall")
+        self.uninstall_button.setObjectName("btnDanger")
+        self.uninstall_button.setStyleSheet(
+            f"QPushButton#btnDanger {{ color: {RED_INACTIVE}; border: 1px solid {RED_INACTIVE}; }}"
+            f"QPushButton#btnDanger:hover {{ background: {RED_INACTIVE}; color: #fff; }}"
+        )
+        self.uninstall_button.clicked.connect(self._confirm_uninstall)
         action_bar.addWidget(self.reload_button)
         action_bar.addWidget(self.save_button)
         action_bar.addStretch(1)
+        action_bar.addWidget(self.uninstall_button)
         root.addLayout(action_bar)
 
     # ── Settings I/O ──────────────────────────────────────────────────────
@@ -377,6 +389,40 @@ class SettingsWidget(QWidget):
     def _clear_install_thread(self) -> None:
         self._install_thread = None
         self._install_worker = None
+
+    def _confirm_uninstall(self) -> None:
+        msg = QMessageBox(self)
+        msg.setWindowTitle("Uninstall CrownLedger")
+        msg.setText("Are you sure you want to uninstall CrownLedger?")
+        msg.setInformativeText(
+            "This will delete all app data (settings, API token, update cache) "
+            "and remove the application folder."
+        )
+        msg.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel)
+        msg.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        if msg.exec() != QMessageBox.StandardButton.Yes:
+            return
+
+        # Delete app data directory (settings, cache, etc.)
+        try:
+            app_data = get_app_data_dir()
+            if app_data.exists():
+                shutil.rmtree(app_data)
+        except Exception:
+            pass
+
+        # If running as packaged app, schedule deletion of the install folder after exit
+        if is_frozen_app():
+            install_dir = str(application_dir())
+            subprocess.Popen(
+                [
+                    "powershell", "-WindowStyle", "Hidden", "-Command",
+                    f"Start-Sleep -Seconds 2; Remove-Item -Path '{install_dir}' -Recurse -Force",
+                ],
+                close_fds=True,
+            )
+
+        QApplication.instance().quit()
 
     def _set_status(self, message: str, *, is_error: bool = False) -> None:
         colour = RED_INACTIVE if is_error else TEXT_MUTED

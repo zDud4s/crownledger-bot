@@ -43,9 +43,17 @@ build/*
 *.ipynb
 /scripts/
 /docs/
+/.*/
+*.md
+!README.md
+
+
 
 # Local databases and binary artifacts
 *.db
 *.sqlite
 *.sqlite3
 *.joblib
+*.json
+
+
